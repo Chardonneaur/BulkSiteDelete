@@ -1,0 +1,21 @@
+{
+    "BulkSiteDelete": {
+        "MenuTitle": "Bulk Site Delete",
+        "PageTitle": "Bulk Site Delete",
+        "PageDescription": "Select multiple websites and delete them at once. This action is irreversible.",
+        "SelectAll": "Select all",
+        "DeselectAll": "Deselect all",
+        "DeleteSelected": "Delete selected sites",
+        "ConfirmTitle": "Confirm Deletion",
+        "ConfirmMessage": "You are about to permanently delete the following %1$s site(s). All data associated with these sites will be lost. This action cannot be undone.",
+        "ConfirmDelete": "Yes, delete permanently",
+        "Cancel": "Cancel",
+        "Deleting": "Deleting sites...",
+        "DeletedSuccess": "%1$s site(s) deleted successfully.",
+        "NoSitesSelected": "Please select at least one site to delete.",
+        "NoSitesFound": "No websites found.",
+        "SiteCount": "%1$s website(s)",
+        "SearchPlaceholder": "Filter by name or URL...",
+        "DeleteError": "Failed to delete sites: %1$s"
+    }
+}

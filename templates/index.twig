@@ -1,0 +1,215 @@
+{% extends 'admin.twig' %}
+
+{% block content %}
+<style>
+#bulkSiteDeleteTable input[type="checkbox"] {
+    opacity: 1;
+    position: static;
+    pointer-events: auto;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+#bulkSiteDeleteCheckAll {
+    opacity: 1;
+    position: static;
+    pointer-events: auto;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+</style>
+<div class="card">
+    <div class="card-content">
+        <h2 class="card-title">{{ 'BulkSiteDelete_PageTitle'|translate }}</h2>
+        <p>{{ 'BulkSiteDelete_PageDescription'|translate }}</p>
+
+        {% if sites is empty %}
+            <div class="alert alert-info">
+                {{ 'BulkSiteDelete_NoSitesFound'|translate }}
+            </div>
+        {% else %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <input
+                        type="text"
+                        id="bulkSiteDeleteSearch"
+                        placeholder="{{ 'BulkSiteDelete_SearchPlaceholder'|translate }}"
+                        class="browser-default"
+                        style="width: 300px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px;"
+                    />
+                </div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span id="bulkSiteDeleteCount" style="color: #666;">{{ sites|length }} website(s)</span>
+                    <a href="" id="bulkSiteDeleteToggleAll">{{ 'BulkSiteDelete_SelectAll'|translate }}</a>
+                </div>
+            </div>
+
+            <form method="post" id="bulkSiteDeleteForm">
+                <input type="hidden" name="nonce" value="{{ deleteNonce }}" />
+                <input type="hidden" name="idSites" id="bulkSiteDeleteIds" value="" />
+
+                <table class="entityTable" id="bulkSiteDeleteTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="bulkSiteDeleteCheckAll" class="browser-default" />
+                            </th>
+                            <th>ID</th>
+                            <th>{{ 'General_Name'|translate }}</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bulkSiteDeleteBody">
+                        {% for site in sites %}
+                        <tr data-id="{{ site.idsite }}" data-name="{{ site.name|e('html_attr') }}" data-url="{{ site.main_url|e('html_attr') }}">
+                            <td><input type="checkbox" class="browser-default bulkSiteDeleteCheck" data-id="{{ site.idsite }}" /></td>
+                            <td>{{ site.idsite }}</td>
+                            <td>{{ site.name }}</td>
+                            <td>{{ site.main_url }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 16px; text-align: right;">
+                    <button
+                        type="button"
+                        class="btn"
+                        id="bulkSiteDeleteBtn"
+                        disabled
+                        style="background-color: #c62828; color: #fff;"
+                    >
+                        {{ 'BulkSiteDelete_DeleteSelected'|translate }} (<span id="bulkSiteDeleteSelectedCount">0</span>)
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+{# Confirmation modal #}
+<div id="bulkSiteDeleteModal" style="display: none;">
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1002;" id="bulkSiteDeleteOverlay"></div>
+    <div style="position: fixed; top: 10%; left: 50%; transform: translateX(-50%); max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; z-index: 1003; background: #fff; border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+        <div style="padding: 24px;">
+            <h4>{{ 'BulkSiteDelete_ConfirmTitle'|translate }}</h4>
+            <p id="bulkSiteDeleteConfirmMsg"></p>
+            <ul id="bulkSiteDeleteConfirmList" style="max-height: 300px; overflow-y: auto; margin: 16px 0; padding-left: 20px;"></ul>
+        </div>
+        <div style="padding: 12px 24px; text-align: right; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 8px;">
+            <a href="" class="btn-flat" id="bulkSiteDeleteCancelBtn">{{ 'BulkSiteDelete_Cancel'|translate }}</a>
+            <a href="" class="btn" id="bulkSiteDeleteConfirmBtn" style="background-color: #c62828; color: #fff;">{{ 'BulkSiteDelete_ConfirmDelete'|translate }}</a>
+        </div>
+    </div>
+</div>
+
+<script>
+$(function () {
+    var selectedIds = {};
+
+    function updateUI() {
+        var term = ($('#bulkSiteDeleteSearch').val() || '').toLowerCase();
+        var visibleCount = 0;
+        var allVisibleSelected = true;
+        var hasVisible = false;
+
+        $('#bulkSiteDeleteBody tr').each(function () {
+            var $row = $(this);
+            var id = $row.data('id');
+            var name = ($row.data('name') || '').toString().toLowerCase();
+            var url = ($row.data('url') || '').toString().toLowerCase();
+            var idStr = id.toString();
+
+            var match = !term || name.indexOf(term) !== -1 || url.indexOf(term) !== -1 || idStr.indexOf(term) !== -1;
+            $row.toggle(match);
+
+            if (match) {
+                visibleCount++;
+                hasVisible = true;
+                if (!selectedIds[id]) allVisibleSelected = false;
+                $row.css('background-color', selectedIds[id] ? '#fff3e0' : '');
+                $row.find('.bulkSiteDeleteCheck').prop('checked', !!selectedIds[id]);
+            }
+        });
+
+        if (!hasVisible) allVisibleSelected = false;
+
+        var count = 0;
+        for (var k in selectedIds) { if (selectedIds[k]) count++; }
+
+        $('#bulkSiteDeleteCount').text(visibleCount + ' website(s)');
+        $('#bulkSiteDeleteSelectedCount').text(count);
+        $('#bulkSiteDeleteBtn').prop('disabled', count === 0);
+        $('#bulkSiteDeleteCheckAll').prop('checked', allVisibleSelected && hasVisible);
+        $('#bulkSiteDeleteToggleAll').text(
+            allVisibleSelected && hasVisible
+                ? '{{ "BulkSiteDelete_DeselectAll"|translate|e("js") }}'
+                : '{{ "BulkSiteDelete_SelectAll"|translate|e("js") }}'
+        );
+    }
+
+    // Checkbox events
+    $(document).on('change', '.bulkSiteDeleteCheck', function () {
+        selectedIds[$(this).data('id')] = this.checked;
+        updateUI();
+    });
+
+    $('#bulkSiteDeleteCheckAll').on('change', function () {
+        var shouldSelect = this.checked;
+        $('#bulkSiteDeleteBody tr:visible').each(function () {
+            selectedIds[$(this).data('id')] = shouldSelect;
+        });
+        updateUI();
+    });
+
+    $('#bulkSiteDeleteToggleAll').on('click', function (e) {
+        e.preventDefault();
+        var allSelected = true;
+        var $visible = $('#bulkSiteDeleteBody tr:visible');
+        $visible.each(function () { if (!selectedIds[$(this).data('id')]) allSelected = false; });
+        $visible.each(function () { selectedIds[$(this).data('id')] = !allSelected; });
+        updateUI();
+    });
+
+    $('#bulkSiteDeleteSearch').on('input', function () { updateUI(); });
+
+    // Delete button -> show modal
+    $('#bulkSiteDeleteBtn').on('click', function () {
+        var ids = [];
+        var listHtml = '';
+        for (var k in selectedIds) {
+            if (selectedIds[k]) {
+                ids.push(k);
+                var $row = $('#bulkSiteDeleteBody tr[data-id="' + k + '"]');
+                var name = $row.find('td:eq(2)').text();
+                listHtml += '<li><strong>' + $('<span>').text(name).html() + '</strong> (ID: ' + k + ')</li>';
+            }
+        }
+        if (ids.length === 0) return;
+
+        var msg = '{{ "BulkSiteDelete_ConfirmMessage"|translate("%1$s")|e("js") }}';
+        $('#bulkSiteDeleteConfirmMsg').text(msg.replace('%1$s', ids.length));
+        $('#bulkSiteDeleteConfirmList').html(listHtml);
+        $('#bulkSiteDeleteModal').show();
+    });
+
+    // Cancel
+    $('#bulkSiteDeleteCancelBtn, #bulkSiteDeleteOverlay').on('click', function (e) {
+        e.preventDefault();
+        $('#bulkSiteDeleteModal').hide();
+    });
+
+    // Confirm delete -> submit form
+    $('#bulkSiteDeleteConfirmBtn').on('click', function (e) {
+        e.preventDefault();
+        var ids = [];
+        for (var k in selectedIds) { if (selectedIds[k]) ids.push(k); }
+        if (ids.length === 0) return;
+
+        $('#bulkSiteDeleteIds').val(ids.join(','));
+        $('#bulkSiteDeleteForm').submit();
+    });
+});
+</script>
+{% endblock %}
