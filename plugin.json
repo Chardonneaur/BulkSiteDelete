@@ -1,7 +1,7 @@
 {
     "name": "BulkSiteDelete",
     "description": "Adds a dedicated admin page to select and delete multiple Matomo websites at once.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "theme": false,
     "require": {
         "matomo": ">=5.0.0-b1,<6.0.0-b1",
@@ -9,12 +9,12 @@
     },
     "authors": [
         {
-            "name": "Ronan",
-            "email": "",
-            "homepage": ""
+            "name": "Chardonneaur",
+            "homepage": "https://github.com/Chardonneaur"
         }
     ],
-    "license": "GPL v3+",
+    "license": "GPL-3.0+",
+    "homepage": "https://github.com/Chardonneaur/BulkSiteDelete",
     "keywords": [
         "matomo",
         "sites",
@@ -23,8 +23,8 @@
         "admin"
     ],
     "support": {
-        "issues": "",
-        "source": ""
+        "issues": "https://github.com/Chardonneaur/BulkSiteDelete/issues",
+        "source": "https://github.com/Chardonneaur/BulkSiteDelete"
     },
     "archive": {
         "exclude": [
